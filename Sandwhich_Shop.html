@@ -1,0 +1,354 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandwhich Shop</title>
+    <style>
+        html, body{
+            margin: 0;
+            padding: 0;
+        }
+
+        #myBorder{
+            height: 75px;
+            width: 100%;
+            background-color: #926d43;
+        }
+        #dwnBorder{
+            height: 75px;
+            width: 100%;
+            margin-top: 500;
+            position: absolute;
+            bottom: 0;
+            background-color: #926d43;
+        }
+        .row{
+            overflow: hidden;
+            padding: 5px;
+        }
+
+        .col{
+            float: left;
+            width: 50%;
+        }
+    </style>
+</head>
+<body style="background-color:#7a2e0be1; max-height: 1000px;">
+    <div id="statusDIV">
+        <form onsubmit="return false" id="status">
+            <h2 id="statusTitle">Sign in to place your orders</h2>
+            <input type="text" name="username" id="username" placeholder="Enter username">
+            <br>
+                
+            <input type="password" name="password" id="password" placeholder="Enter password">
+            <br>
+
+            <button onclick="signUp();">sign up</button>
+            <button onclick="logIn()">log in</button>
+        </form>
+    </div>
+    
+    <div id="menu" style="visibility: hidden; max-height: 600px;">  
+        <h1 style="text-align: center; font-family: 'Trebuchet MS';">Welcome to Chasing the Bread where our sandwhiches fixes a crumby day, how can I help you?</h1>
+        <form id="menuform" onsubmit="return false" style="border: 50px; background-color: rgba(3, 138, 70, 0.863);">
+            <div class="row">
+                <div class="col">
+                    <label for="name">Enter your name</label>
+                    <br>
+                    <input type="text" name="name" id="name" placeholder="name">
+                    <br>
+
+                    <h3>Choice of bread</h3>
+                    <input type="radio" name="bread" id="garlic" value="garlic">
+                    <label for="garlic">garlic</label>
+            
+                    <input type="radio" name="bread" id="italian" value="italian">
+                    <label for="italian">italian</label>
+            
+                    <input type="radio" name="bread" id="wheat" value="wheat">
+                    <label for="wheat">wheat</label>
+                    
+                    <input type="radio" name="bread" id="grain" value="grain">
+                    <label for="grain">flat</label>
+
+                    <input type="radio" name="bread" id="no bread" value="no bread">
+                    <label for="no bread">no bread</label>
+                    <br>
+                    
+                    <h3>Choice of meat</h3>
+                    <input type="checkbox" name="meat" id="beef" value="beef">
+                    <label for="beef">beef</label>
+                    
+                    <input type="checkbox" name="meat" id="chicken" value="chicken">
+                    <label for="chicken">chicken</label>
+                    
+                    <input type="checkbox" name="meat" id="ham" value="ham">
+                    <label for="ham">ham</label>
+                    
+                    <input type="checkbox" name="meat" id="no meat" value="no meat">
+                    <label for="no meat">no meat</label>
+                    <br>
+                    <h3>Choice of Toppings</h3>
+                    <input type="checkbox" name="toppings" id="lettuce" value="lettuce">
+                    <label for="lettuce">lettuce</label>
+                    
+                    <input type="checkbox" name="toppings" id="onions" value="onions">
+                    <label for="onions">onions</label>
+                    
+                    <input type="checkbox" name="toppings" id="tomatoes" value="tomatoes">
+                    <label for="tomatoes">tomatoes</label>
+                    
+                    <input type="checkbox" name="toppings" id="ketchup" value="ketchup">
+                    <label for="ketchup">ketchup</label>
+                    
+                    <input type="checkbox" name="toppings" id="mustard" value="mustard">
+                    <label for="mustard">mustard</label>
+                    
+                    <input type="checkbox" name="toppings" id="hot_sauce" value="hot sauce">
+                    <label for="hot sauce">hot sauce</label>
+                    
+                    <input type="checkbox" name="toppings" id="none" value="none">
+                    <label for="none">none</label>
+                    <br>
+                </div>
+            
+            
+            <div class="col">
+                <h3>Choice of Side</h3>
+                <input type="radio" name="sides" id="chips" value="bbq">
+                <label for="bbq">bbq chips</label>
+                
+                <input type="radio" name="sides" id="chips" value="sour_cream">
+                <label for="sour_cream">sour cream chips</label>
+                
+                <input type="radio" name="sides" id="chips" value="ranch">
+                <label for="ranch">ranch chips</label>
+                
+                <input type="radio" name="sides" id="chips" value="jalepenos">
+                <label for="jalepenos">jalepenos chips</label>
+                
+                <input type="radio" name="sides" id="chips" value="orignal">
+                <label for="orignal">orignal chips</label>
+                
+                <input type="radio" name="sides" id="chips" value="no side">
+                <label for="no side">no side</label>
+                <br>
+                
+                <h3>Choice of Drink</h3>
+                <select name="sides" id="drinks">
+                    <option value="no drink">no drink</option>
+                    
+                    <option value="water">water</option>
+                    
+                    <option value="coca-cola">coca-cola</option>
+                    
+                    <option value="sprite">sprite</option>
+                    
+                    <option value="Dr. Pepper">Dr. Pepper</option>
+                    
+                    <option value="sweet-tea">sweet-tea</option>
+                    
+                    <option value="lemonade">lemonade</option>
+                </select>
+                <br>
+                
+                <h3>For here or to go</h3>
+                <select name="toGo" id="toGo">
+                    <option value="to go">to go</option>
+                    <option value="here">here</option>
+                </select>
+                <br><br>
+            </div>
+        </div>
+
+            <div id="buttons">
+                <button id="place" onclick="placeOrder()">sumbit</button>
+                <button id="send" onclick="sendOrder()">Send Order</button>
+            </div>
+            <br>
+            <div style="text-align: center; padding: 5; height: 150;">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTF3filNPBZGzsC8i7wQYHTbdZ0WDwM-j_rfg&usqp=CAU" alt="sandwhich" style="width: 225;">
+                <img src="https://imagesvc.meredithcorp.io/v3/mm/image?q=60&c=sc&poi=face&w=960&h=480&url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F44%2F2019%2F08%2F26230801%2F4549578.jpg" alt="sandwhich" style="width: 300;">
+                <img src="https://cdn.leitesculinaria.com/wp-content/uploads/2021/03/pepper-egg-sandwich-fp.jpg.optimal.jpg" alt="sandwhich" style="width: 225;">
+            </div>
+    </form>
+    </div>
+
+    
+
+    <script>
+        /*Create a website for your Sandwich Shop. You will have a menu for users to place an order. 
+  You will build an object for each order given. Your webpage should use forms to get all of the information. 
+  Work to make your webpage look inviting. Center things, add color, be creative. */ 
+        class Sandwhich{
+            //my sandwhich object 
+            constructor(bread, meat, toppings, sides, toGo){
+                this.bread=bread;
+                this.meat=meat;
+                this.toppings=toppings;
+                this.sides=sides;
+                this.toGo=toGo;
+            }
+            printOrder=() =>{
+                //tells the user what they ordered
+                return "Thank you for coming. Please come again! Here is your order:\n Bread: "+this.bread+"\n Meat: "+this.meat+"\n Toppings: "+this.toppings+"\n Sides: "+this.sides+"\n For Here or To Go: "+this.toGo; 
+            }
+        }
+        
+        
+        var borderTop=document.createElement("DIV");
+        borderTop.setAttribute("id", "myBorder");
+        document.body.insertBefore(borderTop, document.body.firstChild);
+        //creates the borders of the page
+        var borderDwn=document.createElement("DIV");
+        borderDwn.setAttribute("id", "dwnBorder");
+        document.body.insertBefore(borderDwn, document.getElementById("menu"));
+        
+        var sendBtn=document.getElementById("send"); //allows manipulation to the send order button
+        sendBtn.style.visibility ="hidden"; //sets the send order button invisible
+
+        var usernames=[];
+        var passwords=[];
+        function signUp(){
+            let username=document.getElementById("username").value
+            usernames.push(username);
+            
+            let password=document.getElementById("password").value
+            passwords.push(password);
+
+            document.getElementById("status").reset();
+        }
+
+        function logIn(){
+            let logName=document.getElementById("username").value
+            let logPass=document.getElementById("password").value
+            let menu=document.getElementById("menu");
+            let status=document.getElementById("statusDIV");
+
+            if(usernames.length==0 && passwords.length==0)
+                alert("You must sign up to place an order")
+            else{
+                for (let i = 0; i < usernames.length; i++){
+                    if(logName==usernames[i] && logPass==passwords[i]){
+                        menu.style.visibility="visible";
+                        status.remove();
+                        signOut();
+                        // status.style.visibility="hidden";
+                    }else if(logName!=usernames[i] && logPass!=passwords[i])
+                        alert("username or password does match with any existing username or password!");
+                    else if(logName!=usernames[i] && logPass==passwords[i] || logName==usernames[i] && logPass!=passwords[i])
+                        alert("Password does not match for username!");
+                }
+            }
+        }
+        
+        function signOut() {
+            let outBtn=document.createElement("button");
+            outBtn.innerHTML="sign out";
+            outBtn.setAttribute("onclick", "reset()");
+            
+            document.getElementById("myBorder").appendChild(outBtn);
+        }
+        function reset(){
+            document.location.reload(); //reloads the webpage to delete all the information the webpage is holding
+        }
+
+        var orders=[]; //will contain the sandwiches the user has made
+        function placeOrder(){
+            //grabs information from the form and creates the parameters to make a new sandwich
+            let bread=document.getElementsByName("bread");
+            bread=checkOrder(bread);
+
+            let meat=document.getElementsByName("meat");
+            meat=checkOrder(meat);
+
+            let toppings=document.getElementsByName("toppings");  
+            toppings=checkOrder(toppings);
+
+            let sides=[]; //holds the choice of side and drink as one parameter
+            sides.push(document.getElementById("chips").value);
+            sides.push(document.getElementById("drinks").value);
+
+            let toGo=document.getElementById("toGo").value;
+            createOrder(bread, meat, toppings, sides, toGo); //creates the sandwich object
+            
+            document.getElementById("menuform").reset(); //allows for information held by the form to be resetted and changed after
+            sendBtn.style.visibility ="visible"; //will display the send order button
+        }
+
+        function checkOrder(x){ 
+            //pushes the checked item from the form into an array from the array given
+            //x acts as the html node list elements from inputs of the same name
+            let item=[];
+            for (let i=0; i<x.length; i++) {
+                if(x[i].checked){
+                    item.push(x[i].value);
+                }
+            }
+            item.join(", ");
+            return item; //returns the checked item
+        }
+        
+        function createOrder(bread, meat, toppings, sides, toGo){
+            //uses the parameters sent from placeOrder() to create the sandwich
+            let sandwhich=new Sandwhich(bread, meat, toppings, sides, toGo);
+
+            let name=document.getElementById("name").value
+            Sandwhich.prototype.name=name;
+
+            orders.push(sandwhich); //sends the sandwich to the orders array to be accessed later on
+        }
+
+        function sendOrder(){
+            let price;
+            Sandwhich.prototype.price;
+
+            for (let i = 0; i < orders.length; i++) {
+                //sets the price of each sandwich in orders depending on getPrice(x) and gets the name for the order
+                price=getPrice(orders[i]);
+                orders[i].price=price;
+            }
+
+            //iterate through sandwiches and alert reciept
+            for (let i = 0; i < orders.length; i++) {
+                alert(orders[i].name+"\n"+orders[i].printOrder()+"\n total: $"+orders[i].price);
+                orders.pop();
+            }
+        }
+
+        function getPrice(x) {
+            //compares the length of the meat to determine the price of the sandwich
+            //all sandwiches will be $4 with choice of side and drink +$1.50
+            let amount = 0;
+            switch (x.meat.length) {
+                case 0:
+                case 1:
+                    amount += 4.00;    
+                    break;
+                case 2:
+                    amount+=5.00;
+                    break;
+                case 3:
+                    amount+=6.00;
+                    break;
+                default:
+                    amount += 4.00; 
+                    break;
+            }
+
+            for (let i = 0; i < x.sides.length; i++) {
+                switch (x.sides[i]) {
+                    case "no side":
+                    case "no drink":
+                        break;
+                    default:
+                        amount+=1.50
+                        break;
+                }
+            }
+            return amount;
+        }
+    </script>
+</body>
+</html>
