@@ -1,1 +1,0 @@
-This repository holds the projects and practices created by Henry Centeno in order to showcase his programming skills. Each branch houses all the files corresponding to the language i.e. the Python branch holds all the files made in Python. 
