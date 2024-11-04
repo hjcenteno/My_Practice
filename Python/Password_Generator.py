@@ -1,4 +1,7 @@
-"""Password Generator
+"""
+@author: Henry Centeno
+
+Password Generator
 * ask for length of password
     - at least 8 characters
 * ask if they want to include special characters
