@@ -1,3 +1,9 @@
+"""
+Password Generator GUI
+Author@ Henry Centeno
+Purpose: Make a gui of Password_Generator.py
+"""
+
 import tkinter as tk
 import customtkinter as ctk
 import random as rdm
@@ -8,7 +14,26 @@ ctk.set_appearance_mode("system")
 
 #create root of the gui
 root = ctk.CTk()
-root.geometry("500x450")  
+root.geometry("500x450") 
+
+TIMEOUT = 120000 #two minutes/120 milliseconds
+inactivityTimeout_id = None #used to cancel previous timer 
+
+#global variables
+letters = tk.BooleanVar(value=True)
+special = tk.BooleanVar(value=False)
+numbers = tk.BooleanVar(value=False)
+
+def reset_timer(event=None):
+    global inactivityTimeout_id
+    if(inactivityTimeout_id != None):
+        root.after_cancel(inactivityTimeout_id) #cancel previous timer to allow for another 2 min
+
+    inactivityTimeout_id = root.after(TIMEOUT, quitGUI) #set new timer
+
+#quit program after inactivity
+def quitGUI():
+    root.quit()
 
 def getLength(value):
     #update the label with the current slider value
@@ -16,25 +41,26 @@ def getLength(value):
 
 #get the values of the checkboxes and ensure at least one box is checked
 def getCheckBoxValues():
-    password_length = int(pwLength.get()) 
+    passwordLength = int(pwLength.get()) 
     checkLetters = letters.get()
     checkSpecial = special.get()
     checkNumbers = numbers.get()
 
     #ensure at least one option is selected
-    if not checkLetters and not checkNumbers and not checkSpecial:
+    if(not checkLetters and not checkNumbers and not checkSpecial):
         passwordLabel.configure(text="Please select at least one option.")
         return
 
     #generate password from given parameters
-    password = generatePW(password_length, checkLetters, checkNumbers, checkSpecial)
+    password = generatePW(passwordLength, checkLetters, checkNumbers, checkSpecial)
     passwordLabel.configure(text=password)
 
+
 #generate a password character by character
-def generatePW(n, useLetters, useNumbers, useSpecial):
+def generatePW(length, useLetters, useNumbers, useSpecial):
     newPassword = "" # initialize empty string
     
-    for i in range(n):
+    for i in range(length):
         #create a list of enabled character types
         toss = []
         
@@ -47,7 +73,6 @@ def generatePW(n, useLetters, useNumbers, useSpecial):
         if(useSpecial):
             toss.append("special")
 
-        
         #randomly select a character type from the enabled options
         choice = rdm.choice(toss)
         
@@ -81,7 +106,7 @@ def generatePW(n, useLetters, useNumbers, useSpecial):
 
 def setup(r):
     #initialize global variables
-    global lengthLabel, pwLength, passwordLabel, special, numbers, letters
+    global lengthLabel, pwLength, passwordLabel
     
     #set up the main frame of the application
     frame = ctk.CTkFrame(master=root)
@@ -121,11 +146,6 @@ def setup(r):
     checkboxFrame = ctk.CTkFrame(master=frame)
     checkboxFrame.pack(pady=20, padx=10, fill="x")
 
-    #variables to store the selected password options
-    letters = tk.BooleanVar(value=True)  #default option
-    special = tk.BooleanVar(value=False)
-    numbers = tk.BooleanVar(value=False)
-
     #add checkboxes for password options
     lettersCheckbox = ctk.CTkCheckBox(master=checkboxFrame, text="Letters (A-Z, a-z)", variable=letters)
     lettersCheckbox.grid(row=0, column=0, padx=10, sticky="w")
@@ -146,11 +166,17 @@ def setup(r):
     generateButton.pack(pady=10)
 
     #label to display the generated password
-    passwordLabel = ctk.CTkLabel(master=frame, text="", font=("Tahoma", 16), wraplength=420, anchor="center")
+    passwordLabel = ctk.CTkLabel(master=frame, text="", font=("Tahoma", 16), wraplength=420, anchor="center") 
     passwordLabel.pack(pady=20)
+
+    #bind events to reset the inactivity timer on user activity
+    root.bind("<Any-KeyPress>", reset_timer)
+    root.bind("<Any-Button>", reset_timer)
+    root.bind("<Motion>", reset_timer)
 
 def main():
     setup(root)
+    reset_timer()
     root.mainloop()
 
 main()
