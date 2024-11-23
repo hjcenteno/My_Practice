@@ -59,20 +59,20 @@ def getCheckBoxValues():
 #generate a password character by character
 def generatePW(length, useLetters, useNumbers, useSpecial):
     newPassword = "" # initialize empty string
+
+    #create a list of enabled character types
+    toss = []
+    
+    if(useLetters):
+        toss.append("letters")
+
+    if(useNumbers):
+        toss.append("numbers")
+
+    if(useSpecial):
+        toss.append("special")
     
     for i in range(length):
-        #create a list of enabled character types
-        toss = []
-        
-        if(useLetters):
-            toss.append("letters")
-
-        if(useNumbers):
-            toss.append("numbers")
-
-        if(useSpecial):
-            toss.append("special")
-
         #randomly select a character type from the enabled options
         choice = rdm.choice(toss)
         
@@ -84,12 +84,12 @@ def generatePW(length, useLetters, useNumbers, useSpecial):
                 currentChar = chr(rdm.randint(97, 122))
 
         elif(choice == "numbers"):
-            currentChar = chr(rdm.randint(48, 57))  #numbers
+            currentChar = chr(rdm.randint(48, 57)) #numbers 0 - 9
 
-        elif(choice == "special"):
-            sChar = rdm.randint(0, 3)
+        elif(choice == "special"): #separated due to ascii table
+            sChar = rdm.randint(0, 3) 
             if(sChar == 0):
-                currentChar = chr(rdm.randint(33, 47))  #special characters
+                currentChar = chr(rdm.randint(33, 47))
             
             if(sChar == 1):
                 currentChar = chr(rdm.randint(58, 64))
