@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "headers/hash_map.h"
 
 enum mode {
     low,
@@ -65,6 +66,12 @@ int main(int argc, char const *argv[]){
     if(output == high){
         printf("high\n");
     }
+
+    test(); //see if headers/hashMap.h is included
+
+    //read from stdin
+
+    
 
     return 0;
 }
