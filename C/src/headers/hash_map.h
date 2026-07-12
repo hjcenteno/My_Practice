@@ -10,6 +10,9 @@
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 typedef struct hashEntry{
     //void pointers to avoid restricting the type of whatever key and the entries can be
     void *key;
@@ -18,10 +21,11 @@ typedef struct hashEntry{
 
 typedef struct hashMap{
     hashEntry *table; //dynamic array that will house the buckets each item in the hash map
+    size_t sizeOf_key; //the byte size of the key since we store these as void
+    size_t sizeOf_value; //the byte size of the value since we store these as void
     int size;
     int capacity;
-    int sizeOf_key; //the byte size of the key since we store these as void
-    int sizeOf_value; //the byte size of the value since we store these as void
+    int (*cmp)(const void *a, const void *b); //function pointer to some cmp function
 } hashMap;
 
 // static char cmp(const void*, const void*); //function pointer to a cmp function
@@ -33,7 +37,11 @@ void test();
         Using the capacity, *table will be allocated enough memory to hold capacity number of items.
         all the other fields will be set to 0;
 */
-hashMap* createHashMap(int capacity); //handle initiliazing the hash map
+void createHashMap(
+    hashMap *map, int capacity, 
+    size_t keySize, size_t valueSize,
+    int (*cmp)(const void* a, const void* b)
+); //handle initiliazing the hash map
 
 /*
     implementation:
@@ -54,7 +62,7 @@ void hashMapSet(hashMap* map, const void* key, const void* value); //set the ite
     implementation:
         using the actual bytes of the key, we'll use that to hash the key using the fnv-1a algorithm
 */
-unsigned int hash(const void *key, int keySize); //the hashing function based on the FNV-1a algorithm, returns the hash
+uint64_t hash_fnv_1a_64(const void *key, size_t keySize); //the hashing function based on the FNV-1a algorithm, returns the hash
 
 int hashMapLength(hashMap *map); //return the size of the hash map
 

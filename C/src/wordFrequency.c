@@ -18,6 +18,7 @@
 #include <string.h>
 #include "headers/hash_map.h"
 #include <ctype.h>
+#include <inttypes.h>
 
 #define DEFAULT_PRINT_AMOUNT 20
 #define MAX_WORD_COUNT 1000 //maximum number of words to be read
@@ -59,8 +60,6 @@ char* sanitize_word(const char *unsanitizedWord){
                 break;
             }
         }
-
-        // wordLength++;
     }
     
     word[wordLength] = '\0';
@@ -90,7 +89,15 @@ int read_input(){
             return -1;
         }
         // sanitize_word(buffer);
-        printf("%s\n", key);
+        size_t keyLength = strlen(key);
+        printf("%s = %ld\n", key, keyLength);
+
+        uint64_t hashedKey = hash_fnv_1a_64(key, keyLength);
+        int index = hashedKey % 16;
+        printf(
+            "Key: %s hashes to %"PRIu64" with index of %d\n", 
+            key, hashedKey, index
+        );
         
         wordCount++;
         free(key);
@@ -138,6 +145,8 @@ int main(int argc, char const *argv[]){
     }
 
     test(); //see if headers/hashMap.h is included
+    printf("sizeof(hashMap) = %ld\n", sizeof(hashMap));
+    printf("sizeof(hashEntry) = %ld\n", sizeof(hashEntry));
     
     //read from stdin
     if(read_input() == -1){
