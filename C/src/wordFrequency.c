@@ -17,6 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "headers/hash_map.h"
+#include <ctype.h>
+
+#define DEFAULT_PRINT_AMOUNT 20
+#define MAX_WORD_COUNT 1000 //maximum number of words to be read
+#define MAX_WORD_LENGTH 256 //255 + '\0'
 
 enum mode {
     low,
@@ -24,11 +29,83 @@ enum mode {
     error,
 };
 
-#define DEFAULT_PRINT_AMOUNT 20
+/*
+    converts each word to uppercase for all the characters that are alphanumeric.
+    note: 
+        *for simplicity, 
+*/
+char* sanitize_word(const char *unsanitizedWord){
+    int length = strlen(unsanitizedWord) + 1; //length is handled by read_input
+    char *word = malloc(sizeof(char) * length); //word will never be >= length
+    if(word == NULL){
+        return NULL;
+    }
+    
+    //read each character in the unsanitized word
+    int wordLength = 0; //length of the sanitized word
+    for(int i = 0; i < length; i++){
+        char byte = unsanitizedWord[i];
+        if(byte == '\0'){
+            break;
+        }
+
+        if(isalnum((unsigned char ) byte)){ //convert to unsigned to avoid unknown behavior from non ascii encoding of the word
+            word[wordLength++] = toupper((unsigned char ) byte);
+        }
+
+        //check if the byte is a possession apostrophe ('s)
+        else if(byte == '\''){
+            if((i + 2 == length - 1) && (unsanitizedWord[i + 1] == 's')){
+                break;
+            }
+        }
+
+        // wordLength++;
+    }
+    
+    word[wordLength] = '\0';
+    return word;
+}
+
+/*
+    read's in the input one word at a time, creates a key from that word to then be tracked by the hashmap.
+    returns -1 upon some issue that happens while reading. 0 by default
+*/
+int read_input(){
+    char buffer[MAX_WORD_LENGTH]; //includes the null character
+    int wordCount = 0; //keep count of the number of words
+    int result;
+
+    //read in each word from the file
+    while((result = scanf("%255s", buffer)) == 1){
+        if(wordCount > MAX_WORD_COUNT){
+            fprintf(stderr, "[Warning] Number of words read exceeds %d.\n", MAX_WORD_COUNT);
+            return -1;
+        }
+        
+        //before hashing, turn it to uppercase and get rid of punctuations
+        char *key = sanitize_word(buffer);
+        if(key == NULL){
+            fprintf(stderr, "[Error] Problem with malloc");
+            return -1;
+        }
+        // sanitize_word(buffer);
+        printf("%s\n", key);
+        
+        wordCount++;
+        free(key);
+    }
+
+    if(result != EOF){
+        fprintf(stderr, "[Error] Unexpected scanf() error\n");
+        return -1;
+    }
+
+    return 0;
+}
 
 int main(int argc, char const *argv[]){
     //error check the usage
-    printf("%d\n", argc);
     if(argc != 2){
         printf(
             "[Error] usage: %s [-l/h] < input_file.txt\n"
@@ -57,21 +134,24 @@ int main(int argc, char const *argv[]){
             argv[0]
         );
         return 1;
-    }
-
-    if(output == low){
-        printf("low\n");
-    }
-
-    if(output == high){
-        printf("high\n");
+        
     }
 
     test(); //see if headers/hashMap.h is included
-
-    //read from stdin
-
     
-
+    //read from stdin
+    if(read_input() == -1){
+        printf("[Error] Error encounter while reading input. Exiting program.\n");
+        return -1;
+    }
+    
+    if(output == low){
+        printf("low\n");
+    }
+    
+    if(output == high){
+        printf("high\n");
+    }
+    
     return 0;
 }

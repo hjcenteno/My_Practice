@@ -1,5 +1,5 @@
 CC       := gcc
-CFLAGS   := -std=c17 -Wall -Wextra -g -Isrc/headers
+CFLAGS   := -Wall -Wextra -g -Isrc/headers
 DEPFLAGS := -MMD -MP
 
 SRC_DIR  := src

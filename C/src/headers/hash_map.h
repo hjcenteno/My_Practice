@@ -22,10 +22,9 @@ typedef struct hashMap{
     int capacity;
     int sizeOf_key; //the byte size of the key since we store these as void
     int sizeOf_value; //the byte size of the value since we store these as void
-
-    char (*cmp)(const void*, const void*); //function pointer to a cmp function
 } hashMap;
 
+// static char cmp(const void*, const void*); //function pointer to a cmp function
 
 void test();
 
@@ -58,5 +57,9 @@ void hashMapSet(hashMap* map, const void* key, const void* value); //set the ite
 unsigned int hash(const void *key, int keySize); //the hashing function based on the FNV-1a algorithm, returns the hash
 
 int hashMapLength(hashMap *map); //return the size of the hash map
+
+static void resizeHashMap(hashMap *map); //resize the hash map whenever it needs to grow
+
+void hashMapRemoveKey(hashMap *map, const void *key); //get the item at the key, free/set it to null, then state that the bucket is a tombstone
 
 #endif
