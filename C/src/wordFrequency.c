@@ -56,7 +56,7 @@ char* sanitize_word(const char *unsanitizedWord){
 
         //check if the byte is a possession apostrophe ('s)
         else if(byte == '\''){
-            if((i + 2 == length - 1) && (unsanitizedWord[i + 1] == 's')){
+            if((i + 2 == length - 1) && (toupper((unsigned char)unsanitizedWord[i + 1]) == 'S')){
                 break;
             }
         }
@@ -90,14 +90,6 @@ int read_input(hashMap *map){
         }
 
         size_t keyLength = strlen(key);
-        printf("%s = %ld\n", key, keyLength);
-
-        uint64_t hashedKey = hash_fnv_1a_64(key, keyLength);
-        int index = hashedKey % 16;
-        printf(
-            "Key: %s hashes to %"PRIu64" with index of %d\n", 
-            key, hashedKey, index
-        );
 
         //insert the word into the map
         hashEntry *item;
@@ -127,6 +119,38 @@ int keycmp(const void *a, const void *b){
     const char *sa = (const char *)a;
     const char *sb = (const char *)b;
     return strcmp(sa, sb);
+}
+
+//returns an array of integers of a min-heap
+int* minHeap(){
+    int heapSize = 0;
+    int heapIdx = 0;
+
+    for(int i = 0; i < map->capacity; i++){
+        if(map->table[i].status != OCCUPIED){ //skip non-empty buckets
+            continue;
+        }
+
+        if(heapSize < 10){
+            heapIdx = 9;
+        }else{
+            heapIdx = heapSize++;
+        }
+
+        outputIndeces[heapIdx] = i;
+        while(
+            (heapIdx > 0) &&
+            ()
+        ){
+
+        }
+    }
+}
+
+//uses a minheap to print the top 10 entries in the map
+void printHigh(hashMap *map){
+    int outputIndeces[10] = {0}; //initialize all to 0
+    minHeap(&map, &outputIndeces);
 }
 
 int main(int argc, char const *argv[]){
@@ -175,8 +199,7 @@ int main(int argc, char const *argv[]){
     
     //read from stdin
     if(read_input(&map) == -1){
-        printf("[Error] Error encounter while reading input. Exiting program.\n");
-        return -1;
+        printf("[Error] Error encounter while reading input.\n");
     }
     
     if(output == low){
@@ -185,6 +208,7 @@ int main(int argc, char const *argv[]){
     
     if(output == high){
         printf("high\n");
+        printHigh(&map);
     }
     for(int i = 0; i < map.capacity; i++){
         hashEntry *bucket = &map.table[i];
@@ -195,7 +219,7 @@ int main(int argc, char const *argv[]){
         printf("key: %s\nValue: %d\n", (char *)bucket->key, *(int *)bucket->value);
     }
 
-    printf("deleting hashMap\n");
+    printf("deleting hashMap with size of %d\n", map.size);
     deleteHashMap(&map);
     return 0;
 }
