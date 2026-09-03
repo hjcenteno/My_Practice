@@ -32,6 +32,7 @@ typedef struct hashEntry{
     //void pointers to avoid restricting the type of whatever key and the entries can be
     void *key;
     void *value;
+    size_t actualkeySize;
     hm_availability status;
 } hashEntry;
 

@@ -44,7 +44,8 @@ void deleteHashMap(hashMap* map){
     map->size = 0;
     map->capacity = 0;
     map->sizeOf_key = 0;
-    map->sizeOf_value = 0;        
+    map->sizeOf_value = 0;
+    printf("done printing\n");
 }
 
 static void resizeHashMap(hashMap *map){
@@ -72,7 +73,7 @@ static void resizeHashMap(hashMap *map){
         }
 
         //since key and value are pointers, we can set the flag to HM_HEAP
-        hashMapSet(map, oldTable[i].key, map->sizeOf_key, oldTable[i].value, HM_HEAP, HM_HEAP); 
+        hashMapSet(map, oldTable[i].key, oldTable[i].actualkeySize, oldTable[i].value, HM_HEAP, HM_HEAP); 
     }
 
 
@@ -191,7 +192,7 @@ void hashMapSet(
                 fprintf(stderr, "[Error] failure in malloc");
                 return;
             }
-            entry->key = memcpy(destKey, key, map->sizeOf_key); //pointer to this buffer
+            entry->key = memcpy(destKey, key, keySize); //pointer to this buffer
         }
 
         else if(keyFlag == HM_HEAP){ //point to the key
@@ -211,6 +212,7 @@ void hashMapSet(
             entry->value = value;
         }
 
+        entry->actualkeySize = keySize;
         entry->status = OCCUPIED;
         map->size++;
     }
