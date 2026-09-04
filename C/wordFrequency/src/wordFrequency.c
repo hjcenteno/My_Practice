@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "headers/hash_map.h"
+#include "hash_map/hash_map.h"
 #include <ctype.h>
 #include <inttypes.h>
 
@@ -122,36 +122,36 @@ int keycmp(const void *a, const void *b){
 }
 
 //returns an array of integers of a min-heap
-int* minHeap(){
-    int heapSize = 0;
-    int heapIdx = 0;
+// int* minHeap(){
+//     int heapSize = 0;
+//     int heapIdx = 0;
 
-    for(int i = 0; i < map->capacity; i++){
-        if(map->table[i].status != OCCUPIED){ //skip non-empty buckets
-            continue;
-        }
+//     for(int i = 0; i < map->capacity; i++){
+//         if(map->table[i].status != OCCUPIED){ //skip non-empty buckets
+//             continue;
+//         }
 
-        if(heapSize < 10){
-            heapIdx = 9;
-        }else{
-            heapIdx = heapSize++;
-        }
+//         if(heapSize < 10){
+//             heapIdx = 9;
+//         }else{
+//             heapIdx = heapSize++;
+//         }
 
-        outputIndeces[heapIdx] = i;
-        while(
-            (heapIdx > 0) &&
-            ()
-        ){
+//         outputIndeces[heapIdx] = i;
+//         while(
+//             (heapIdx > 0) &&
+//             ()
+//         ){
 
-        }
-    }
-}
+//         }
+//     }
+// }
 
 //uses a minheap to print the top 10 entries in the map
-void printHigh(hashMap *map){
-    int outputIndeces[10] = {0}; //initialize all to 0
-    minHeap(&map, &outputIndeces);
-}
+// void printHigh(hashMap *map){
+//     int outputIndeces[10] = {0}; //initialize all to 0
+//     minHeap(&map, &outputIndeces);
+// }
 
 int main(int argc, char const *argv[]){
     //error check the usage
@@ -208,8 +208,9 @@ int main(int argc, char const *argv[]){
     
     if(output == high){
         printf("high\n");
-        printHigh(&map);
+        // printHigh(&map);
     }
+
     for(int i = 0; i < map.capacity; i++){
         hashEntry *bucket = &map.table[i];
         if(bucket->status != OCCUPIED){

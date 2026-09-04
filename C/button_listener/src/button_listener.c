@@ -4,7 +4,7 @@
         This program will listen for whenever the user presses a button on the mcu to state that the button has been pressed and released
 */
 
-#include "lpuart_server.h"
+#include "lpuart_server/lpuart_server.h"
 
 //test function
 // void print_handler(const uint8_t *data, uint8_t length){
