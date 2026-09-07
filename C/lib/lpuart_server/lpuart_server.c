@@ -71,7 +71,7 @@ void close_lpuart_server(int fd){
     }
 }
 
-static int read_byte(int fd, uint8_t *byte){
+static int read_byte(int fd, uint8_t *byte){ //static to not expose this function publically
     while(1){
         ssize_t n = read(fd, byte, 1); //read the byte
         if(n == 1){ //had read the byte

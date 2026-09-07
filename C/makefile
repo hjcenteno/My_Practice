@@ -49,7 +49,7 @@ ifeq ($(PROJECT_NAME),)
 	$(error Usage: make project <name>)
 endif
 	mkdir -p $(PROJECT_NAME)/src
-	touch $(PROJECT_NAME)/src/$(PROJECT_NAME).c
+	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(PROJECT_NAME)/src/$(PROJECT_NAME).c
 	code $(PROJECT_NAME)/src/$(PROJECT_NAME).c
 
 MAKEFLAGS += -r -R
