@@ -55,6 +55,11 @@ endif
 MAKEFLAGS += -r -R
 
 # `make lib <name>`: compile a single lib/*/<name>.c file as a syntax check.
+# `make newlib <name>` scaffolds a brand new lib/<name>/ directory instead.
+# `make listlib` enumerates every buildable library. All three work from
+# the top level (C/) or from inside a project dir. Extra word after
+# "lib"/"newlib" is the file name, not a build target (same MAKECMDGOALS
+# trick as `clean`/`project` above).
 ifeq (lib,$(firstword $(MAKECMDGOALS)))
 LIB_ARG := $(word 2,$(MAKECMDGOALS))
 ifneq ($(LIB_ARG),)
@@ -62,13 +67,26 @@ $(eval $(LIB_ARG):;@:)
 endif
 endif
 
-.PHONY: lib
+ifeq (newlib,$(firstword $(MAKECMDGOALS)))
+NEWLIB_ARG := $(word 2,$(MAKECMDGOALS))
+ifneq ($(NEWLIB_ARG),)
+$(eval $(NEWLIB_ARG):;@:)
+endif
+endif
+
+.PHONY: lib newlib
 ifneq ($(PROJECTS),)
 lib:
 ifeq ($(LIB_ARG),)
 	$(error Usage: make lib <name>  e.g. make lib hash_map)
 endif
 	@$(MAKE) -C $(firstword $(PROJECTS)) -f $(MAKEFILE_PATH) lib $(LIB_ARG)
+
+newlib:
+ifeq ($(NEWLIB_ARG),)
+	$(error Usage: make newlib <name>  e.g. make newlib hash_map)
+endif
+	@$(MAKE) -C $(firstword $(PROJECTS)) -f $(MAKEFILE_PATH) newlib $(NEWLIB_ARG)
 else
 LIB_REL := $(basename $(LIB_ARG))
 ifeq ($(findstring /,$(LIB_REL)),)
@@ -80,9 +98,33 @@ ifeq ($(LIB_ARG),)
 	$(error Usage: make lib <name>  e.g. make lib hash_map)
 endif
 ifeq ($(LIB_REL),)
-	$(error No source file found matching '$(LIB_ARG).c' under $(LIB_DIR)/*/)
+	$(error No source file found matching '$(LIB_ARG).c' under $(LIB_DIR)/*/ -- use make newlib $(LIB_ARG) to create one)
 endif
 	@echo "compiled $(LIB_DIR)/$(LIB_REL).c -> $(OBJ_DIR)/lib/$(LIB_REL).o"
+
+newlib:
+ifeq ($(NEWLIB_ARG),)
+	$(error Usage: make newlib <name>  e.g. make newlib hash_map)
+endif
+	mkdir -p $(LIB_DIR)/$(NEWLIB_ARG)
+	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).c
+	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h
+	code $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h
+	@echo "created $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).c and $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h"
+endif
+
+# `make listlib`: enumerate every lib/*/*.c file that `make lib <name>`
+# could build, without compiling anything. Separate single-word target so
+# it never collides with `list` below or with MAKECMDGOALS parsing for `lib`.
+.PHONY: listlib
+ifneq ($(PROJECTS),)
+listlib:
+	@$(MAKE) -C $(firstword $(PROJECTS)) -f $(MAKEFILE_PATH) listlib
+else
+LIB_ALL := $(sort $(patsubst $(LIB_DIR)/%.c,%,$(wildcard $(LIB_DIR)/*/*.c)))
+listlib:
+	@echo "Libraries available under $(LIB_DIR)/:"
+	@for l in $(LIB_ALL); do echo "  $$l"; done
 endif
 
 .PHONY: all clean list
@@ -144,3 +186,30 @@ list:
 	    for f in $$d/src/*.c; do echo "  $$(basename "$$f" .c)"; done; \
 	  fi; \
 	done
+
+# `make HELP`: print a summary of every target this Makefile supports.
+# Works the same from the top level or inside a project dir; the last
+# section lists whatever this directory's context actually contains
+# (projects at the top level, programs inside a project dir).
+.PHONY: HELP
+HELP:
+	@echo "C Makefile -- available targets"
+	@echo ""
+	@echo "Top level (run from C/):"
+	@echo "  make <project>            to build a project."
+	@echo "  make clean [proj ...]     to remove the bin directory for the named projects. If no project was given, will remove each bin directory in all the project directories."
+	@echo "  make list                 list out every project"
+	@echo "  make project <name>       create a new project dir"
+	@echo "  make lib <name>           compile the given lib source file for a syntax check, does not link"
+	@echo "  make newlib <name>        create a new lib directory with source and header files"
+	@echo "  make listlib              list every library available under the lib directory"
+	@echo "  make HELP                 show this message"
+ifneq ($(PROJECTS),)
+	@echo ""
+	@echo "Projects found here:"
+	@for p in $(PROJECTS); do echo "  $$p"; done
+else ifneq ($(PROGRAMS),)
+	@echo ""
+	@echo "Programs found here (src/*.c):"
+	@for p in $(PROGRAMS); do echo "  $$p"; done
+endif
