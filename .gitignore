@@ -1,6 +1,8 @@
 .vscode
 *.bin
 */*/bin
+.venv/
+./*/private
 
 # Prerequisites
 *.d
