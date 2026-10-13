@@ -1,4 +1,25 @@
-CC       := gcc
+# ---------------------------------------------------------------------------
+# Compiler + standard selection
+#
+# Prefers the newest GCC installed (gcc-14 over the system gcc) and picks the
+# newest C standard that compiler fully supports:
+#   GCC >= 14 -> gnu23   (final C23)
+#   GCC 13    -> gnu2x   (draft C23, most features)
+#   older     -> gnu17
+# The gnu* variants keep POSIX/GNU extras visible (M_PI, strdup, getline...),
+# which strict -std=c23 hides.
+#
+# Override any of these on the command line, e.g.
+#   make hash_map_test CC=gcc CSTD=gnu17
+# Run `make clean` after changing compiler or standard so objects aren't mixed.
+# ---------------------------------------------------------------------------
+ifneq ($(filter default undefined,$(origin CC)),)
+CC := $(firstword $(foreach c,gcc-16 gcc-15 gcc-14 gcc,$(if $(shell command -v $(c) 2>/dev/null),$(c))))
+endif
+CC_MAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion 2>/dev/null)))
+CSTD ?= $(shell if [ "$(CC_MAJOR)" -ge 14 ] 2>/dev/null; then echo gnu23; \
+                elif [ "$(CC_MAJOR)" -ge 13 ] 2>/dev/null; then echo gnu2x; \
+                else echo gnu17; fi)
 
 SRC_DIR       := src
 HDR_DIR       := $(SRC_DIR)/headers
@@ -6,8 +27,13 @@ BIN_DIR       := bin
 OBJ_DIR       := $(BIN_DIR)/obj
 LIB_DIR       := ../lib
 
-CFLAGS   := -Wall -Wextra -g -I$(HDR_DIR) -I$(LIB_DIR)
+CFLAGS   := -Wall -Wextra -g -std=$(CSTD) -I$(HDR_DIR) -I$(LIB_DIR)
+CFLAGS   += $(EXTRA_CFLAGS)
 DEPFLAGS := -MMD -MP
+
+# -lm so <math.h> functions (sin, sqrt, ...) link; glibc keeps them in libm.
+LDLIBS   := -lm
+LDLIBS   += $(EXTRA_LDLIBS)
 
 PROGRAMS := $(basename $(notdir $(wildcard $(SRC_DIR)/*.c)))
 
@@ -52,10 +78,14 @@ endif
 	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(PROJECT_NAME)/src/$(PROJECT_NAME).c
 	code $(PROJECT_NAME)/src/$(PROJECT_NAME).c
 
-MAKEFLAGS += -r -R
+# Disable make's built-in implicit rules/variables, and silence the
+# "Entering/Leaving directory" chatter from the recursive $(MAKE) -C calls.
+MAKEFLAGS += -r -R --no-print-directory
 
 # `make lib <name>`: compile a single lib/*/<name>.c file as a syntax check.
-# `make newlib <name>` scaffolds a brand new lib/<name>/ directory instead.
+# <name> can be "hash_map", "hash_map.c", or "containers/hash_map".
+# `make newlib <name>` scaffolds lib/<name>/<name>.{c,h}, and
+# `make newlib <dir>/<name>` adds <name>.{c,h} to lib/<dir>/ (new or existing).
 # `make listlib` enumerates every buildable library. All three work from
 # the top level (C/) or from inside a project dir. Extra word after
 # "lib"/"newlib" is the file name, not a build target (same MAKECMDGOALS
@@ -76,46 +106,66 @@ endif
 
 .PHONY: lib newlib
 ifneq ($(PROJECTS),)
+# top level: forward into any one project dir, since lib/ is a shared
+# sibling of all of them and ../lib resolves the same from any project.
 lib:
 ifeq ($(LIB_ARG),)
-	$(error Usage: make lib <name>  e.g. make lib hash_map)
+	$(error Usage: make lib <name>  e.g. make lib hash_map or make lib containers/hash_map)
 endif
 	@$(MAKE) -C $(firstword $(PROJECTS)) -f $(MAKEFILE_PATH) lib $(LIB_ARG)
 
 newlib:
 ifeq ($(NEWLIB_ARG),)
-	$(error Usage: make newlib <name>  e.g. make newlib hash_map)
+	$(error Usage: make newlib <name> or make newlib <dir>/<name>  e.g. make newlib containers/hash_map)
 endif
 	@$(MAKE) -C $(firstword $(PROJECTS)) -f $(MAKEFILE_PATH) newlib $(NEWLIB_ARG)
 else
+# nested (inside a project dir): resolve the file and compile it via the
+# $(OBJ_DIR)/lib/%.o pattern rule. "name" is searched in every lib/*/,
+# "dir/name" is taken as an exact path.
 LIB_REL := $(basename $(LIB_ARG))
 ifeq ($(findstring /,$(LIB_REL)),)
 LIB_REL := $(patsubst $(LIB_DIR)/%.c,%,$(firstword $(wildcard $(LIB_DIR)/*/$(LIB_REL).c)))
+else
+LIB_REL := $(if $(wildcard $(LIB_DIR)/$(LIB_REL).c),$(LIB_REL))
 endif
 
 lib: $(if $(LIB_REL),$(OBJ_DIR)/lib/$(LIB_REL).o)
 ifeq ($(LIB_ARG),)
-	$(error Usage: make lib <name>  e.g. make lib hash_map)
+	$(error Usage: make lib <name>  e.g. make lib hash_map or make lib containers/hash_map)
 endif
 ifeq ($(LIB_REL),)
-	$(error No source file found matching '$(LIB_ARG).c' under $(LIB_DIR)/*/ -- use make newlib $(LIB_ARG) to create one)
+	$(error No source file found matching '$(LIB_ARG)' under $(LIB_DIR)/ -- use make newlib $(basename $(LIB_ARG)) to create it)
 endif
 	@echo "compiled $(LIB_DIR)/$(LIB_REL).c -> $(OBJ_DIR)/lib/$(LIB_REL).o"
 
+# `make newlib hash_map`            -> lib/hash_map/hash_map.{c,h}
+# `make newlib containers/hash_map` -> lib/containers/hash_map.{c,h}
+# Existing files are never overwritten.
+NEWLIB_NAME := $(basename $(NEWLIB_ARG))
+ifeq ($(findstring /,$(NEWLIB_NAME)),)
+NEWLIB_DIR  := $(NEWLIB_NAME)
+NEWLIB_FILE := $(NEWLIB_NAME)
+else
+NEWLIB_DIR  := $(patsubst %/,%,$(dir $(NEWLIB_NAME)))
+NEWLIB_FILE := $(notdir $(NEWLIB_NAME))
+endif
+
 newlib:
 ifeq ($(NEWLIB_ARG),)
-	$(error Usage: make newlib <name>  e.g. make newlib hash_map)
+	$(error Usage: make newlib <name> or make newlib <dir>/<name>  e.g. make newlib containers/hash_map)
 endif
-	mkdir -p $(LIB_DIR)/$(NEWLIB_ARG)
-	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).c
-	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h
-	code $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h
-	@echo "created $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).c and $(LIB_DIR)/$(NEWLIB_ARG)/$(NEWLIB_ARG).h"
+	@mkdir -p $(LIB_DIR)/$(NEWLIB_DIR)
+	@for ext in c h; do \
+	  f=$(LIB_DIR)/$(NEWLIB_DIR)/$(NEWLIB_FILE).$$ext; \
+	  if [ -e "$$f" ]; then echo "skipped $$f (already exists)"; \
+	  else printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > "$$f"; echo "created $$f"; fi; \
+	done
+	code $(LIB_DIR)/$(NEWLIB_DIR)/$(NEWLIB_FILE).h
 endif
 
 # `make listlib`: enumerate every lib/*/*.c file that `make lib <name>`
-# could build, without compiling anything. Separate single-word target so
-# it never collides with `list` below or with MAKECMDGOALS parsing for `lib`.
+# could build, without compiling anything.
 .PHONY: listlib
 ifneq ($(PROJECTS),)
 listlib:
@@ -131,24 +181,25 @@ endif
 all: $(addprefix $(BIN_DIR)/,$(PROGRAMS))
 
 define PROGRAM_template
-HDRS_$(1) := $$(shell $(CC) $(CFLAGS) -MM $(SRC_DIR)/$(1).c 2>/dev/null \
-               | tr -d '\\' | tr ' ' '\n' \
-               | grep -E '^$(HDR_DIR)/.*\.h$$$$')
+# Every header the program pulls in, directly or through other headers,
+# as reported by the compiler itself.
+DEPS_$(1) := $$(shell $(CC) $(CFLAGS) -MM $(SRC_DIR)/$(1).c 2>/dev/null \
+               | tr -d '\\' | tr ' ' '\n')
 
-# Scan the program's own source + its local headers for subfolder-qualified
-# includes like #include "hash_map/hash_map.h", and only link the lib
-# directories actually referenced -- unused libs are neither compiled
-# nor linked for this program.
-USED_LIBS_$(1) := $$(sort $$(filter $$(notdir $$(wildcard $(LIB_DIR)/*)), \
-    $$(shell grep -ohE '#include *"[A-Za-z0-9_]+/' $(SRC_DIR)/$(1).c $$(HDRS_$(1)) 2>/dev/null \
-        | sed -E 's/#include *"//; s#/##')))
+HDRS_$(1) := $$(filter $(HDR_DIR)/%.h,$$(DEPS_$(1)))
+
+# Link every lib/<dir>/ that any of those headers lives in -- including
+# libraries only reached through another library's header -- and nothing
+# else, so an unrelated broken library can't break this build.
+USED_LIBS_$(1) := $$(sort $$(foreach h,$$(filter $(LIB_DIR)/%,$$(DEPS_$(1))), \
+    $$(firstword $$(subst /, ,$$(patsubst $(LIB_DIR)/%,%,$$(h))))))
 
 LIB_OBJS_$(1) := $$(foreach l,$$(USED_LIBS_$(1)),$$(patsubst $(LIB_DIR)/%.c,$(OBJ_DIR)/lib/%.o,$$(wildcard $(LIB_DIR)/$$(l)/*.c)))
 
-OBJS_$(1) := $(OBJ_DIR)/$(1).o $$(patsubst $(HDR_DIR)/%.h,$(OBJ_DIR)/headers/%.o,$$(HDRS_$(1))) $$(LIB_OBJS_$(1))
+OBJS_$(1) := $(OBJ_DIR)/$(1).o $$(patsubst $(HDR_DIR)/%.c,$(OBJ_DIR)/headers/%.o,$$(wildcard $$(HDRS_$(1):.h=.c))) $$(LIB_OBJS_$(1))
 
 $(BIN_DIR)/$(1): $$(OBJS_$(1)) | $(BIN_DIR)
-	$(CC) $(CFLAGS) $$^ -o $$@
+	$(CC) $(CFLAGS) $$^ $(LDLIBS) -o $$@
 
 $(1): $(BIN_DIR)/$(1)
 	@:
@@ -174,6 +225,8 @@ $(OBJ_DIR) $(OBJ_DIR)/headers $(BIN_DIR):
 clean:
 ifneq ($(CLEAN_TARGETS),)
 	@for p in $(CLEAN_TARGETS); do rm -rf $$p/bin; echo "cleaned $$p/bin"; done
+else ifneq ($(PROJECTS),)
+	@for p in $(PROJECTS); do rm -rf $$p/bin; echo "cleaned $$p/bin"; done
 else
 	rm -rf $(BIN_DIR)
 endif
@@ -188,22 +241,21 @@ list:
 	done
 
 # `make HELP`: print a summary of every target this Makefile supports.
-# Works the same from the top level or inside a project dir; the last
-# section lists whatever this directory's context actually contains
-# (projects at the top level, programs inside a project dir).
 .PHONY: HELP
 HELP:
-	@echo "C Makefile -- available targets"
+	@echo "C Makefile -- available targets  (compiler: $(CC) $(CC_MAJOR), -std=$(CSTD))"
 	@echo ""
 	@echo "Top level (run from C/):"
-	@echo "  make <project>            to build a project."
-	@echo "  make clean [proj ...]     to remove the bin directory for the named projects. If no project was given, will remove each bin directory in all the project directories."
-	@echo "  make list                 list out every project"
-	@echo "  make project <name>       create a new project dir"
-	@echo "  make lib <name>           compile the given lib source file for a syntax check, does not link"
-	@echo "  make newlib <name>        create a new lib directory with source and header files"
-	@echo "  make listlib              list every library available under the lib directory"
-	@echo "  make HELP                 show this message"
+	@echo "  make <project>                   to build a project."
+	@echo "  make clean [proj ...]            to remove the bin directory for the named projects. If no project was given, will remove each bin directory in all the project directories."
+	@echo "  make list                        list out every project"
+	@echo "  make project <name>              create a new project dir"
+	@echo "  make lib <name>|<dir>/<name>     compile the given lib source file for a syntax check, does not link"
+	@echo "  make newlib <name>|<dir>/<name>  create a lib source/header pair (new dir, or add to an existing one)"
+	@echo "  make listlib                     list every library available under the lib directory"
+	@echo "  make HELP                        show this message"
+	@echo ""
+	@echo "Overrides: CC=<compiler> CSTD=<std> EXTRA_CFLAGS=... EXTRA_LDLIBS=..."
 ifneq ($(PROJECTS),)
 	@echo ""
 	@echo "Projects found here:"

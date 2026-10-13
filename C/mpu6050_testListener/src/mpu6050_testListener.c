@@ -17,6 +17,17 @@ typedef struct mpu6050_t{
     uint16_t temp;
 }mpu6050_t;
 
+typedef struct cal_mpu6050_t{
+    //holds the data to do math from the raw data
+    float accX;
+    float accY;
+    float accZ;
+    float temp;
+    float gyroRoll;
+    float gyroPitch;
+    float gyroYaw;
+}cal_mpu6050_t;
+
 typedef struct accelf_t{
     float x;
     float y;
@@ -37,12 +48,27 @@ void mpu6050_handler(const uint8_t *data, uint8_t length){
             printf("    {%d}0x%02x  ", i,  data[i]);
         }
     }
-    else if(length == sizeof(accelf_t)){
-        accelf_t accRx;
-        memcpy(&accRx, data, sizeof(accRx));
-        printf("x: %.04f y: %.04f z: %.04f\n", accRx.x, accRx.y, accRx.z);
-        // printf("X: %.04f\n", testingAxis);
-        printf("\n");
+    else if(length == sizeof(cal_mpu6050_t)){
+        cal_mpu6050_t cal_data;
+        //need to study of a more better/secure way of handling the raw bytes
+        memcpy(&cal_data, data, sizeof(cal_data));
+        
+        /* output format:
+            accelerometer data: 
+                x: %f, y: %f, z: %f
+
+            gyrometer data:
+                roll: %f, pitch: %f, yaw: %f
+        */
+        printf( //print accelerometer data
+            "accelerometer data:\n    x: %.04f, y: %.04f, z: %.04f\n\n",
+            cal_data.accX, cal_data.accY, cal_data.accZ
+        );
+
+        printf( //print gyrometer data
+            "gyrometer data:\n    x: %.04f, y: %.04f, z: %.04f\n",
+            cal_data.gyroRoll, cal_data.gyroPitch, cal_data.gyroYaw
+        );
     }
     else{
         printf("I am %#x\n", data[0]); //print whoAmI
