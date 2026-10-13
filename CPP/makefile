@@ -14,6 +14,10 @@
 # std::expected, ranges additions) is only complete in newer versions --
 # std::print, for example, needs g++ 14.
 #
+# External libraries: a program that includes raylib.h (directly or through
+# any header it pulls in) is linked with -lraylib automatically. Add more
+# in PROGRAM_template under EXTLIBS.
+#
 # Override anything on the command line, e.g.
 #   make array CXX=g++ CXXSTD=c++20        (or CXXSTD=c++26 to try the next one)
 # Run `make clean` after changing compiler or standard.
@@ -191,8 +195,9 @@ endif
 
 define PROGRAM_template
 # Every header the program pulls in, directly or through other headers,
-# as reported by the compiler itself.
-DEPS_$(1) := $$(shell $(CXX) $(CXXFLAGS) -MM $(2) 2>/dev/null \
+# as reported by the compiler itself. -M (not -MM) so system headers such
+# as /usr/local/include/raylib.h show up too.
+DEPS_$(1) := $$(shell $(CXX) $(CXXFLAGS) -M $(2) 2>/dev/null \
                | tr -d '\\' | tr ' ' '\n')
 
 # Project-local headers with a matching .cpp get that .cpp compiled + linked.
@@ -208,13 +213,18 @@ USED_LIBS_$(1) := $$(sort $$(foreach h,$$(filter $(LIB_DIR)/%,$$(DEPS_$(1))), \
 
 LIB_OBJS_$(1) := $$(foreach l,$$(USED_LIBS_$(1)),$$(patsubst $(LIB_DIR)/%.cpp,$(OBJ_DIR)/lib/%.o,$$(wildcard $(LIB_DIR)/$$(l)/*.cpp)))
 
+# External libraries, linked only when the program (or any header it
+# pulls in) includes the matching header. Add more with +=, e.g.
+#   EXTLIBS_$(1) += $$(if $$(filter %/SDL.h,$$(DEPS_$(1))),-lSDL2)
+EXTLIBS_$(1) := $$(if $$(filter %/raylib.h,$$(DEPS_$(1))),-lraylib)
+
 OBJS_$(1) := $(OBJ_DIR)/$(1).o $$(HDR_OBJS_$(1)) $$(LIB_OBJS_$(1))
 
 $(OBJ_DIR)/$(1).o: $(2) | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $$< -o $$@
 
 $(BIN_DIR)/$(1): $$(OBJS_$(1)) | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $$^ $(LDLIBS) -o $$@
+	$(CXX) $(CXXFLAGS) $$^ $$(EXTLIBS_$(1)) $(LDLIBS) -o $$@
 
 .PHONY: $(1)
 $(1): $(BIN_DIR)/$(1)
@@ -275,6 +285,7 @@ HELP:
 	@echo "  make HELP                        show this message"
 	@echo ""
 	@echo "Overrides: CXX=<compiler> CXXSTD=<std> EXTRA_CXXFLAGS=... EXTRA_LDLIBS=..."
+	@echo "Auto-linked: -lraylib for programs that include raylib.h"
 ifneq ($(PROJECTS),)
 	@echo ""
 	@echo "Projects found here:"
