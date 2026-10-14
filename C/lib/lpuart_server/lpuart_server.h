@@ -19,6 +19,7 @@ extern "C" {
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #define MAX_PAYLOAD_SIZE 80
@@ -32,6 +33,7 @@ typedef void (*lpuart_data_handler)(const uint8_t *data, uint8_t length);
 
 int init_lpuart_server(void); //stuck to a baud of 9600 since the lpuart runs off the lse clock giving a maximum of 9600 for the baud
 void close_lpuart_server(int fd); 
+void stop_lpuart_thread(bool writing); //makes a request for a thread to stop running to safely close the server
 
 //implementation of the state machine for the server side
 int run_lpuart_server(int fd, lpuart_data_handler handler); //currently a read only implementation

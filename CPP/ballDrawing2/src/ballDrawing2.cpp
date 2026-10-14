@@ -227,7 +227,7 @@ int main(void){
         processAccerelationInput(currAcceleration, player);
         renderPlayer(player);
     }
-
+    stop_lpuart_thread(false); //false since the server is just reading
     mpu6050Listener.join();
     CloseWindow();
     return 0;

@@ -12,6 +12,21 @@
 */
 
 #include "lpuart_server.h"
+#include <stdatomic.h>
+
+static atomic_bool runServerReading = true; //this is for multithreading when reading
+static atomic_bool runServerWriting = true; //this is for multithreading when writing
+
+void stop_lpuart_thread(bool stopWriting){
+    //makes the request to stop the thread for the server
+    if(stopWriting){
+        //the default for the server is reading so writing is assumed to be started by another thread
+        atomic_store(&runServerWriting, false);
+        return; //keep the request separates
+    }
+
+    atomic_store(&runServerReading, false); //stop the reading thread
+}
 
 int init_lpuart_server(void){
     //set up to read the ttyACM0 as this is where the mcu will write to
@@ -52,14 +67,16 @@ int init_lpuart_server(void){
     );
     tty.c_oflag &= ~OPOST;
 
-    tty.c_cc[VMIN] = 1; //block until at least 1 byte is available
-    tty.c_cc[VTIME] = 0;
+    tty.c_cc[VMIN] = 0; //don't block
+    tty.c_cc[VTIME] = 100; //allow for a timeout of 10 sec incase a wire is disconnected
 
     if(tcsetattr(port, TCSANOW, &tty) != 0){
         perror("tcsetattr");
         close(port);
         return -1;
     }
+
+    tcflush(port, TCIOFLUSH); //flush the device before accessing it
 
     return port;
 }
@@ -98,7 +115,7 @@ int run_lpuart_server(int fd, lpuart_data_handler handler){
 
     uint8_t byte, length, expected_checksum; //states
 
-    while(1){ //continuously read the ttyAMC0
+    while(runServerReading){ //continuously read the ttyAMC0
         //reset the actual checksum and rb size between transmissions
         uint8_t actual_checksum = start_byte;
         uint8_t payload[MAX_PAYLOAD_LENGTH];
