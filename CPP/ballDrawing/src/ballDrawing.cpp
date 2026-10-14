@@ -68,42 +68,63 @@ At the end of processing, it will give the processed inputs to the ball class
 
 void captureAccelerationInput(Vector2 &directions){
     //handle key inputs and update the corresponding axis
-    int key = GetKeyPressed(); //get the key that was pressed
+    // int key = GetKeyPressed(); //get the key that was pressed
 
-    //valid inputs are w, a, s, d and the arrow key
-    switch (key){
-        //make the player go up
-        case KEY_W:
-        case KEY_UP:
-            directions.y = -ACCELERATION;
-            break;
+    // //valid inputs are w, a, s, d and the arrow key
+    // switch (key){
+    //     //make the player go up
+    //     case KEY_W:
+    //     case KEY_UP:
+    //         directions.y = -ACCELERATION;
+    //         break;
 
-        //make the player go down
-        case KEY_S:
-        case KEY_DOWN:
-            directions.y = ACCELERATION;
-            break;
+    //     //make the player go down
+    //     case KEY_S:
+    //     case KEY_DOWN:
+    //         directions.y = ACCELERATION;
+    //         break;
 
-        //make the player go left
-        case KEY_A:
-        case KEY_LEFT:
-            directions.x = -ACCELERATION;
-            break;
+    //     //make the player go left
+    //     case KEY_A:
+    //     case KEY_LEFT:
+    //         directions.x = -ACCELERATION;
+    //         break;
         
-        //make the player go right
-        case KEY_D:
-        case KEY_RIGHT:
-            directions.x = ACCELERATION;
-            break;
+    //     //make the player go right
+    //     case KEY_D:
+    //     case KEY_RIGHT:
+    //         directions.x = ACCELERATION;
+    //         break;
 
-        case KEY_SPACE: //stop moving
-            directions.x = 0.0f;
-            directions.y = 0.0f;
-            break;
+    //     case KEY_SPACE: //stop moving
+    //         directions.x = 0.0f;
+    //         directions.y = 0.0f;
+    //         break;
             
-        default:
-            break;
+    //     default:
+    //         break;
+    // }
+
+    float dx = 0.0f;
+    float dy = 0.0f;
+    if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)){
+        dy = -ACCELERATION;
     }
+
+    if(IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)){
+        dy = ACCELERATION;
+    }
+
+    if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
+        dx = -ACCELERATION;
+    }
+
+    if(IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)){
+        dx = ACCELERATION;
+    }
+    
+    directions.x = dx;
+    directions.y = dy;
 }
 
 void processAccerelationInput(Vector2 direction, ball &player){
