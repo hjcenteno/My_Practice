@@ -5,6 +5,7 @@
 */
 
 #include <raylib.h>
+#include <raymath.h>
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -13,14 +14,6 @@
 #define SPEED (500.0f)
 
 constexpr float ACCELERATION = 1.0f;
-
-typedef enum accelFactor{
-    noAccel, //do nothing
-    accelUp, //accelerate up
-    accelDown, //accelerate down
-    accelLeft, //accelerate left 
-    accelRight, //accelerate right
-}accelFactor;
 
 class ball{
     private:
@@ -73,7 +66,7 @@ At the end of processing, it will give the processed inputs to the ball class
 *Rendering: This will be the stuff between the begin and end drawing functions
 */
 
-accelFactor captureAccelerationInput(accelFactor current){
+void captureAccelerationInput(Vector2 &directions){
     //handle key inputs and update the corresponding axis
     int key = GetKeyPressed(); //get the key that was pressed
 
@@ -82,59 +75,43 @@ accelFactor captureAccelerationInput(accelFactor current){
         //make the player go up
         case KEY_W:
         case KEY_UP:
-            return accelUp;
+            directions.y = -ACCELERATION;
+            break;
 
         //make the player go down
         case KEY_S:
         case KEY_DOWN:
-            return accelDown;
+            directions.y = ACCELERATION;
+            break;
 
         //make the player go left
         case KEY_A:
         case KEY_LEFT:
-            return accelLeft;
+            directions.x = -ACCELERATION;
+            break;
         
         //make the player go right
         case KEY_D:
         case KEY_RIGHT:
-            return accelRight;
+            directions.x = ACCELERATION;
+            break;
 
         case KEY_SPACE: //stop moving
-            return noAccel;
+            directions.x = 0.0f;
+            directions.y = 0.0f;
+            break;
             
         default:
-            return current;
+            break;
     }
 }
 
-void processAccerelationInput(accelFactor direction, ball &player){
+void processAccerelationInput(Vector2 direction, ball &player){
     //get the current position of the player
-    float dx = 0.0f;
-    float dy = 0.0f;
     const float step = GetFrameTime() * SPEED;
-    
-    switch(direction){
-        case accelUp:
-            dy = -ACCELERATION;
-            break;
+    direction = Vector2Normalize(direction); //makes the dy, dx between [0, 1]
 
-        case accelDown:
-            dy = ACCELERATION;
-            break;
-
-        case accelLeft:
-            dx = -ACCELERATION;
-            break;
-
-        case accelRight:
-            dx = ACCELERATION;
-            break;
-
-        default:
-            break;
-    }
-
-    player.updatePosition(dx * step, dy * step);
+    player.updatePosition(direction.x * step, direction.y * step);
 }
 
 void renderPlayer(ball &player){
@@ -149,10 +126,10 @@ int main(void){
     InitWindow(WIDTH, HEIGHT, "Ball Drawing Test");
     float initRadius = 15.0; //initial radius of the ball
     ball player = ball(initRadius); //radius of 15
-    accelFactor currAcceleration = noAccel;
+    Vector2 currAcceleration = {0.0, 0.0};
 
     while(!WindowShouldClose()){
-        currAcceleration = captureAccelerationInput(currAcceleration);
+        captureAccelerationInput(currAcceleration);
         processAccerelationInput(currAcceleration, player);
         renderPlayer(player);
     }
