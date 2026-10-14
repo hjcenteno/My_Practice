@@ -14,10 +14,6 @@
 # std::expected, ranges additions) is only complete in newer versions --
 # std::print, for example, needs g++ 14.
 #
-# External libraries: a program that includes raylib.h (directly or through
-# any header it pulls in) is linked with -lraylib automatically. Add more
-# in PROGRAM_template under EXTLIBS.
-#
 # Override anything on the command line, e.g.
 #   make array CXX=g++ CXXSTD=c++20        (or CXXSTD=c++26 to try the next one)
 # Run `make clean` after changing compiler or standard.
@@ -38,14 +34,38 @@ OBJ_DIR  := $(BIN_DIR)/obj
 # the top level and from inside any project dir.
 LIB_DIR  := $(patsubst %/,%,$(dir $(MAKEFILE_PATH)))/lib
 
+# The C practice libraries, so C++ programs can use them:
+#   #include "C/lib/lpuart_server/lpuart_server.h"   (path from My_Practice/)
+#   #include "lpuart_server/lpuart_server.h"         (short form)
+# Any C/lib/<dir>/ a program includes gets its .c files compiled with the C
+# compiler and linked in, same as CPP/lib/. Assumes C/ sits next to CPP/;
+# override with C_LIB_DIR=/path/to/C/lib if it doesn't.
+PRACTICE_DIR := $(patsubst %/,%,$(dir $(patsubst %/,%,$(dir $(MAKEFILE_PATH)))))
+C_LIB_DIR    ?= $(PRACTICE_DIR)/C/lib
+
 # Extensions used when scaffolding new files.
 SRC_EXT  := cpp
 HDR_EXT  := hpp
 
-CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -g -I$(HDR_DIR) -I$(LIB_DIR)
+INCLUDES := -I$(HDR_DIR) -I$(LIB_DIR) -I$(C_LIB_DIR) -I$(PRACTICE_DIR)
+
+CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -g $(INCLUDES)
 CXXFLAGS += $(EXTRA_CXXFLAGS)
+
+# C compiler for the C/lib sources: newest gcc, newest C standard it supports
+# (same rules as the C makefile).
+ifneq ($(filter default undefined,$(origin CC)),)
+CC := $(firstword $(foreach c,gcc-16 gcc-15 gcc-14 gcc,$(if $(shell command -v $(c) 2>/dev/null),$(c))))
+endif
+CC_MAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion 2>/dev/null)))
+CSTD ?= $(shell if [ "$(CC_MAJOR)" -ge 14 ] 2>/dev/null; then echo gnu23; \
+                elif [ "$(CC_MAJOR)" -ge 13 ] 2>/dev/null; then echo gnu2x; \
+                else echo gnu17; fi)
+CFLAGS   := -std=$(CSTD) -Wall -Wextra -g -I$(C_LIB_DIR)
+CFLAGS   += $(EXTRA_CFLAGS)
 DEPFLAGS := -MMD -MP
-LDLIBS   := $(EXTRA_LDLIBS)
+LDLIBS   := -lraylib
+LDLIBS   += $(EXTRA_LDLIBS)
 
 # Top-level dispatch: `make <project>` / `make clean-<project>` from CPP/ itself.
 PROJECTS := $(sort $(foreach f,$(wildcard */src/*.cpp),$(firstword $(subst /, ,$(f)))))
@@ -195,9 +215,8 @@ endif
 
 define PROGRAM_template
 # Every header the program pulls in, directly or through other headers,
-# as reported by the compiler itself. -M (not -MM) so system headers such
-# as /usr/local/include/raylib.h show up too.
-DEPS_$(1) := $$(shell $(CXX) $(CXXFLAGS) -M $(2) 2>/dev/null \
+# as reported by the compiler itself.
+DEPS_$(1) := $$(shell $(CXX) $(CXXFLAGS) -MM $(2) 2>/dev/null \
                | tr -d '\\' | tr ' ' '\n')
 
 # Project-local headers with a matching .cpp get that .cpp compiled + linked.
@@ -213,18 +232,19 @@ USED_LIBS_$(1) := $$(sort $$(foreach h,$$(filter $(LIB_DIR)/%,$$(DEPS_$(1))), \
 
 LIB_OBJS_$(1) := $$(foreach l,$$(USED_LIBS_$(1)),$$(patsubst $(LIB_DIR)/%.cpp,$(OBJ_DIR)/lib/%.o,$$(wildcard $(LIB_DIR)/$$(l)/*.cpp)))
 
-# External libraries, linked only when the program (or any header it
-# pulls in) includes the matching header. Add more with +=, e.g.
-#   EXTLIBS_$(1) += $$(if $$(filter %/SDL.h,$$(DEPS_$(1))),-lSDL2)
-EXTLIBS_$(1) := $$(if $$(filter %/raylib.h,$$(DEPS_$(1))),-lraylib)
+# Same for C libraries under C/lib/, compiled with the C compiler.
+USED_CLIBS_$(1) := $$(sort $$(foreach h,$$(filter $(C_LIB_DIR)/%,$$(DEPS_$(1))), \
+    $$(firstword $$(subst /, ,$$(patsubst $(C_LIB_DIR)/%,%,$$(h))))))
 
-OBJS_$(1) := $(OBJ_DIR)/$(1).o $$(HDR_OBJS_$(1)) $$(LIB_OBJS_$(1))
+CLIB_OBJS_$(1) := $$(foreach l,$$(USED_CLIBS_$(1)),$$(patsubst $(C_LIB_DIR)/%.c,$(OBJ_DIR)/clib/%.o,$$(wildcard $(C_LIB_DIR)/$$(l)/*.c)))
+
+OBJS_$(1) := $(OBJ_DIR)/$(1).o $$(HDR_OBJS_$(1)) $$(LIB_OBJS_$(1)) $$(CLIB_OBJS_$(1))
 
 $(OBJ_DIR)/$(1).o: $(2) | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $$< -o $$@
 
 $(BIN_DIR)/$(1): $$(OBJS_$(1)) | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $$^ $$(EXTLIBS_$(1)) $(LDLIBS) -o $$@
+	$(CXX) $(CXXFLAGS) $$^ $(LDLIBS) -o $$@
 
 .PHONY: $(1)
 $(1): $(BIN_DIR)/$(1)
@@ -237,6 +257,10 @@ $(foreach p,$(filter-out $(GOAL_ARGS),$(ROOT_PROGRAMS)),$(eval $(call PROGRAM_te
 $(OBJ_DIR)/headers/%.o: $(HDR_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/clib/%.o: $(C_LIB_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/lib/%.o: $(LIB_DIR)/%.cpp
 	@mkdir -p $(dir $@)
@@ -284,8 +308,7 @@ HELP:
 	@echo "  make listlib                     list every library available under the lib directory"
 	@echo "  make HELP                        show this message"
 	@echo ""
-	@echo "Overrides: CXX=<compiler> CXXSTD=<std> EXTRA_CXXFLAGS=... EXTRA_LDLIBS=..."
-	@echo "Auto-linked: -lraylib for programs that include raylib.h"
+	@echo "Overrides: CXX=<compiler> CXXSTD=<std> CC=<c compiler> CSTD=<std> C_LIB_DIR=<path> EXTRA_CXXFLAGS=... EXTRA_CFLAGS=... EXTRA_LDLIBS=..."
 ifneq ($(PROJECTS),)
 	@echo ""
 	@echo "Projects found here:"

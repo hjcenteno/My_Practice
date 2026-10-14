@@ -7,6 +7,10 @@
 #ifndef LPUART_SERVER_H
 #define LPUART_SERVER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <time.h>
 #include <termios.h>
@@ -31,5 +35,9 @@ void close_lpuart_server(int fd);
 
 //implementation of the state machine for the server side
 int run_lpuart_server(int fd, lpuart_data_handler handler); //currently a read only implementation
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
