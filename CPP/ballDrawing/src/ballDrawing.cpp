@@ -10,7 +10,9 @@
 
 #define WIDTH (1200u)
 #define HEIGHT (800u)
-#define ACCELERATION_RATE (5u)
+#define SPEED (500.0f)
+
+constexpr float ACCELERATION = 1.0f;
 
 typedef enum accelFactor{
     noAccel, //do nothing
@@ -29,39 +31,36 @@ class ball{
         ball(float r); //establishes the initial x and y position of the ball on the canvas
         ~ball(); //free it
 
-        void updatePosition(int dx, int dy);
+        void updatePosition(float dx, float dy);
 
         //public member variables
-        uint16_t x;
-        uint16_t y;
+        Vector2 position;
         float radius;
 };
 
 ball::ball(float r){
     //draw the ball 
-    ball::x = WIDTH / 2; //initially at the center of the window
-    ball::y = HEIGHT / 2;
+    // ball::x = WIDTH / 2; //initially at the center of the window
+    // ball::y = HEIGHT / 2;
+    ball::position = {WIDTH / 2, HEIGHT / 2};
     ball::radius = r;
 }
 
 ball::~ball(){
 }
 
-void ball::updatePosition(int dx, int dy){
+void ball::updatePosition(float dx, float dy){
     //get the new position of the where the ball would be
-    uint16_t newX = this->x + dx; //integer overflow will make the position greater than the width/height
-    uint16_t newY = this->y + dy;
-    
-    //check if the new position lies in the bounds of the window    
-    if(
-        ((newX > 0) && (newY > 0)) && //top left corner
-        ((newX < WIDTH) && (newY < HEIGHT)) //bottom right corner
-    ){
-        fprintf(stdout, "dx: %d; dy: %d", dx, dy);
-        this->x = newX;
-        this->y = newY;
-    }
+    float newX = position.x + dx;
+    float newY = position.y + dy;
 
+    //check if the position is in bounds
+    bool xBound = (newX > radius) && (newX < ((float)WIDTH - radius));
+    bool yBound = (newY > radius) && (newY < ((float)HEIGHT - radius));
+    if(xBound && yBound){
+        position.x = newX;
+        position.y = newY;
+    }
 }
 
 /* This will be split between 3 events: inputs, processing, then rendering.
@@ -77,9 +76,6 @@ At the end of processing, it will give the processed inputs to the ball class
 accelFactor captureAccelerationInput(accelFactor current){
     //handle key inputs and update the corresponding axis
     int key = GetKeyPressed(); //get the key that was pressed
-    if(key == 0){ //0 means nothing was pressed
-        return current;
-    }
 
     //valid inputs are w, a, s, d and the arrow key
     switch (key){
@@ -103,52 +99,49 @@ accelFactor captureAccelerationInput(accelFactor current){
         case KEY_RIGHT:
             return accelRight;
 
-        default:
+        case KEY_SPACE: //stop moving
             return noAccel;
+            
+        default:
+            return current;
     }
 }
 
-void processAccerelationInput(accelFactor factor, ball &player){
+void processAccerelationInput(accelFactor direction, ball &player){
     //get the current position of the player
-    int newX = 0;
-    int newY = 0;
-    switch (factor){
+    float dx = 0.0f;
+    float dy = 0.0f;
+    const float step = GetFrameTime() * SPEED;
+    
+    switch(direction){
         case accelUp:
-            fprintf(stdout, "going up\n");
-            newY -= ACCELERATION_RATE;
+            dy = -ACCELERATION;
             break;
-            
+
         case accelDown:
-            fprintf(stdout, "going down\n");
-            newY += ACCELERATION_RATE;
+            dy = ACCELERATION;
             break;
 
         case accelLeft:
-            fprintf(stdout, "going left\n");
-            newX -= ACCELERATION_RATE;
+            dx = -ACCELERATION;
             break;
 
         case accelRight:
-            fprintf(stdout, "going right\n");
-            newX += ACCELERATION_RATE;
+            dx = ACCELERATION;
             break;
-        
+
         default:
-            fprintf(stdout, "staying still\n");
-            newX = 0;
-            newY = 0;
             break;
     }
 
-    player.updatePosition(newX, newY);
+    player.updatePosition(dx * step, dy * step);
 }
-
 
 void renderPlayer(ball &player){
     //handle drawing the player in the window
     BeginDrawing();
     ClearBackground(BLANK);
-    DrawCircle(player.x, player.y, player.radius, RED);
+    DrawCircleV(player.position, player.radius, RED);
     EndDrawing();
 }
 
