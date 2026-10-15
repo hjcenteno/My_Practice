@@ -7,11 +7,13 @@
         First thing is to have the listener happen in the background of the window.
 */
 
-#include <raylib.h>
-#include <raymath.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <thread>
+#include <atomic>
+#include "headers/common.hpp"
+#include "headers/orientationHandling.hpp"
+#include "headers/ballPlayer.hpp"
 #include "C/lib/lpuart_server/lpuart_server.h"
 
 #define WIDTH (1200u)
@@ -21,10 +23,17 @@
 using std::thread;
 
 constexpr float ACCELERATION = 1.0f;
+std::atomic_bool sensorConnected = false;
+
 
 /* The position of the ball will be determined by the roll/pitch angles from the mpu6050
  * 
  */
+
+typedef struct orientation{
+    float roll;
+    float pitch;
+}orientation;
 
 class ball{
     private:
@@ -67,6 +76,10 @@ void ball::updatePosition(float dx, float dy){
     }
 }
 
+
+//store an atomic pointer to the orientation
+std::atomic<orientation> *sensorInputs;
+
 /* This will be split between 3 events: inputs, processing, then rendering.
 *Inputs: the loop will handle obtaining the inputs then gives it to the ball class to do whatever it needs to.
 This is to keep the ball class simple in that it should only worry about where the ball should be.
@@ -77,7 +90,11 @@ At the end of processing, it will give the processed inputs to the ball class
 *Rendering: This will be the stuff between the begin and end drawing functions
 */
 
-void captureAccelerationInput(Vector2 &directions){
+void captureSensorInputs(Vector2 &directions){
+    return;
+}
+
+void captureKeyInputs(Vector2 &directions){
     float dx = 0.0f;
     float dy = 0.0f;
     if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)){
@@ -121,84 +138,20 @@ void renderPlayer(ball &player){
  * another thread to read the mpu6050
 */
 
-typedef struct orientation{
-    float roll;
-    float pitch;
-}orientation;
-
-typedef struct raw_mpu6050_t{
-    //matches how where each value is in stored registers
-    int16_t accX;
-    int16_t accY;
-    int16_t accZ;
-    int16_t temp;
-    int16_t gyroX;
-    int16_t gyroY;
-    int16_t gyroZ;
-}raw_mpu6050_t;
-
-typedef struct cal_mpu6050_t{
-    //holds the data to do math from the raw data
-    float accX;
-    float accY;
-    float accZ;
-    float temp;
-    float gyroX;
-    float gyroY;
-    float gyroZ;
-}cal_mpu6050_t;
-
-/*  outline of the transmission:
-first transmission is the whoAmI register value
-second transmission will be the cal and raw mpu6050 structs
-third transmission will the accelerometer and gyrometer data
-fourth transmission will be the pitch and roll angles
+/* outline of the transmission:
+ * I will be ignoring the first three transmissions so I do have to build new firmware
+ * fourth transmission will be the pitch and roll angles
 */
 void angle_handler(const uint8_t *data, uint8_t length){
-    switch (length){
+    switch(length){
         case sizeof(orientation):
             orientation angles;
             memcpy(&angles, data, sizeof(angles));
             printf("roll: %04f radians, pitch: %04f radians\n", angles.roll, angles.pitch);
             break;
-        case sizeof(raw_mpu6050_t):
-            //just print the raw bytes
-            printf("mpu6050_t struct (raw bytes):");
-            for(uint8_t i = 0; i < length; i++){
-                if(i % 2 == 0){
-                    printf("\n");
-                }
-                
-                printf("    {%d}0x%02x  ", i,  data[i]);
-            }
-            break;
-        case sizeof(cal_mpu6050_t):
-            //print the accelerometer and gyrometer data
-            cal_mpu6050_t cal_data;
-            memcpy(&cal_data, data, sizeof(cal_data));
-            /* output format:
-                accelerometer data: 
-                    x: %f, y: %f, z: %f
-
-                gyrometer data:
-                    roll: %f, pitch: %f, yaw: %f
-            */
-            printf( //print accelerometer data
-                "accelerometer data:\n    x: %.04f, y: %.04f, z: %.04f\n\n",
-                cal_data.accX, cal_data.accY, cal_data.accZ
-            );
-
-            printf( //print gyrometer data
-                "gyrometer data:\n    x: %.04f, y: %.04f, z: %.04f\n",
-                cal_data.gyroX, cal_data.gyroY, cal_data.gyroZ
-            );
-            break;
-        case sizeof(uint8_t):
-            printf("I am %#x\n", data[0]); //print whoAmI
         default:
             break;
     }
-    printf("\n");
 }
 
 int init_lpuart_listening(){
@@ -208,6 +161,7 @@ int init_lpuart_listening(){
         return 1;
     }
 
+    atomic_store(&sensorConnected, true); //signal the sensor is connected
     run_lpuart_server(port, angle_handler);
     close_lpuart_server(port);
     
@@ -223,7 +177,12 @@ int main(void){
     thread mpu6050Listener(&init_lpuart_listening);
 
     while(!WindowShouldClose()){
-        captureAccelerationInput(currAcceleration);
+        if(sensorConnected){
+            captureSensorInputs(currAcceleration);
+        }
+        else{
+            captureKeyInputs(currAcceleration);
+        }
         processAccerelationInput(currAcceleration, player);
         renderPlayer(player);
     }
