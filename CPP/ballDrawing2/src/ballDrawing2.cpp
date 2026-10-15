@@ -7,9 +7,6 @@
         First thing is to have the listener happen in the background of the window.
 */
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <iostream>
 #include "headers/common.hpp"
 #include "headers/orientationHandling.hpp"
 #include "headers/ballPlayer.hpp"
@@ -83,6 +80,8 @@ int init_lpuart_listening(){
 
 int main(void){
     InitWindow(WIDTH, HEIGHT, "Ball Drawing Test");
+    SetTargetFPS(60);
+
     float initRadius = 15.0; //initial radius of the ball
     BallPlayer player = BallPlayer(initRadius); //radius of 15
     Vector2 currAcceleration = {0.0, 0.0};

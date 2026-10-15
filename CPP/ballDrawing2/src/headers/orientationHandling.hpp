@@ -3,6 +3,12 @@
 
 #include "common.hpp"
 
+#define RAD_TO_DEG(X) (X * RAD2DEG) //convert radians to degrees
+#define DEG_TO_RAD(X) (X * DEG2RAD) //convert degree to radians
+
+constexpr float MINIMUM_TILT_DEGREE = 8.0f; //the mininum degree of tilt to move the ball
+constexpr float MINIMUM_TILT_RADIANS = DEG_TO_RAD(MINIMUM_TILT_DEGREE);
+
 typedef struct orientation{
     float roll;
     float pitch;
