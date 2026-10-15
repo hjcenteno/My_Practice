@@ -21,6 +21,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <stdatomic.h>
 
 #define MAX_PAYLOAD_SIZE 80
 #define MAX_PAYLOAD_LENGTH 255

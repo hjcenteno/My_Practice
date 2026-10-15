@@ -7,7 +7,7 @@ class BallPlayer{
     public:
         BallPlayer(float r);
         ~BallPlayer();
-        void updataPosition(float dx, float dy);
+        void updatePosition(float dx, float dy);
 
         //member variables
         Vector2 position;

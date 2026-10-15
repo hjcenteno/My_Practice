@@ -12,7 +12,6 @@
 */
 
 #include "lpuart_server.h"
-#include <stdatomic.h>
 
 static atomic_bool runServerReading = true; //this is for multithreading when reading
 static atomic_bool runServerWriting = true; //this is for multithreading when writing
