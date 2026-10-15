@@ -9,8 +9,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <thread>
-#include <atomic>
+#include <iostream>
 #include "headers/common.hpp"
 #include "headers/orientationHandling.hpp"
 #include "headers/ballPlayer.hpp"
@@ -22,8 +21,19 @@
 
 using std::thread;
 
-std::atomic_bool sensorConnected = false;
+/* at the moment, orientation is just pitch and roll so it's just 8 bytes at the moment.
+ * If yaw is added, the size of orientation will be 12 making this file uncompilable until
+ * the yaw is handled
+ */
+static_assert(sizeof(orientation) == 8);
 
+std::atomic_bool sensorConnected = false;
+std::atomic<orientation> atomic_angles{ 
+    orientation{ //set atomic angles as an orientation of 0, 0
+        .roll = 0.0f, 
+        .pitch = 0.0f
+    } 
+}; //where the pitch and roll angles will be stored
 
 void renderPlayer(BallPlayer &player){
     //handle drawing the player in the window
@@ -43,11 +53,13 @@ void renderPlayer(BallPlayer &player){
  * fourth transmission will be the pitch and roll angles
 */
 void uart_angleHandler(const uint8_t *data, uint8_t length){
+    //the purpose of this function is to collect the data from the mpu6050
     switch(length){
         case sizeof(orientation):
-            orientation angles;
-            memcpy(&angles, data, sizeof(angles));
-            printf("roll: %04f radians, pitch: %04f radians\n", angles.roll, angles.pitch);
+            orientation dataBuffer;
+            //copying the memory into the buffer is safer than casting data and reading the bytes directly as a orientation
+            memcpy(&dataBuffer, data, sizeof(dataBuffer));
+            atomic_angles.store(dataBuffer);
             break;
         default:
             break;
@@ -64,6 +76,7 @@ int init_lpuart_listening(){
     atomic_store(&sensorConnected, true); //signal the sensor is connected
     run_lpuart_server(port, uart_angleHandler);
     close_lpuart_server(port);
+    atomic_store(&sensorConnected, false); //signal the sensor is not connected
     
     return 0;
 }
@@ -78,7 +91,7 @@ int main(void){
 
     while(!WindowShouldClose()){
         if(sensorConnected){
-            captureSensorInputs(currAcceleration);
+            captureSensorInputs(currAcceleration, atomic_angles);
         }
         else{
             captureKeyInputs(currAcceleration);

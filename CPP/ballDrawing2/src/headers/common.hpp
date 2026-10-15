@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <thread>
+#include <atomic>
 
 //common macros, constants to be shared around
 constexpr float BALL_ACCELERATION_RATE = 1.0f;

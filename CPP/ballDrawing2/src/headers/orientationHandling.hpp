@@ -12,7 +12,7 @@ typedef struct orientation{
  * Parameters:
  *   -Vector 2: reference to the vector holding the accelerations in the x and y axises
  */
-void captureSensorInputs(Vector2 &accelerations);
+void captureSensorInputs(Vector2 &accelerations, std::atomic<orientation> &atomic_angles);
 
 
 #endif
