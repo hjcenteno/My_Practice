@@ -16,30 +16,23 @@
 #define GPIO_IDR_ID5                   GPIO_IDR_ID5_Msk
 
 
+typedef struct KnobTransmission{
+    float rotationAmt;
+    float delta;
+} KnobTransmission;
+
 void knob_handler(const uint8_t *data, uint8_t length){
-    if(length != sizeof(uint32_t)){
+    if(length != sizeof(KnobTransmission)){
         return; //data is not the correct length
     }
 
     //check what bit is read in
-    uint32_t idr_b = 0;
-    memcpy(&idr_b, data, sizeof(idr_b));
+    KnobTransmission kt;
+    memcpy(&kt, data, sizeof(kt));
 
     //first flip idr since the pin would be 0 on logic low, then see if it's 1
-    if((~idr_b) & GPIO_IDR_ID3){
-        printf("s1\n");
-    } 
-        
-    
-    else if((~idr_b) & GPIO_IDR_ID4){
-        printf("key\n");
-    } 
-        
-    else if((~idr_b) & GPIO_IDR_ID5){
-        printf("s2\n");
-    } 
-        
-
+    printf("delta: %.02f\n", kt.delta);
+    printf("rotationAmt: %.02f\n", kt.rotationAmt);
 }
 
 int main(void){

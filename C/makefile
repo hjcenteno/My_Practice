@@ -50,7 +50,14 @@ clean-$(1):
 	$$(MAKE) -C $(1) -f $$(MAKEFILE_PATH) clean
 endef
 
-$(foreach proj,$(PROJECTS),$(eval $(call PROJECT_template,$(proj))))
+# `make run <project> [args...]`: the second word is the project, the rest
+# are program arguments. Each is given a no-op rule so make doesn't try to
+# build it as a target.
+ifeq (run,$(firstword $(MAKECMDGOALS)))
+RUN_NAME := $(word 2,$(MAKECMDGOALS))
+RUN_ARGS := $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(foreach a,$(filter-out $(RUN_NAME),$(sort $(RUN_ARGS))),$(eval $(a):;@:))
+endif
 
 # `make clean <project> [<project> ...]` at top level: extra words are
 # targets to clean, not build targets.
@@ -77,6 +84,14 @@ endif
 	mkdir -p $(PROJECT_NAME)/src
 	printf '/*\n    author: Henry Centeno\n    description:\n*/\n' > $(PROJECT_NAME)/src/$(PROJECT_NAME).c
 	code $(PROJECT_NAME)/src/$(PROJECT_NAME).c
+
+.PHONY: run
+run:
+ifeq ($(RUN_NAME),)
+	$(error Usage: make run <name> [ARGS="..."])
+endif
+	@$(MAKE) -C $(RUN_NAME) -f $(MAKEFILE_PATH) $(RUN_NAME)
+	./$(RUN_NAME)/bin/$(RUN_NAME) $(RUN_ARGS) $(ARGS)
 
 # Disable make's built-in implicit rules/variables, and silence the
 # "Entering/Leaving directory" chatter from the recursive $(MAKE) -C calls.
